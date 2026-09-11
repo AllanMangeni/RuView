@@ -42,6 +42,7 @@ set(REQUIRES
     lwip
     mbedtls
     efuse
+    led_strip
 )
 
 # ADR-110: C6-only components — pulled in when building for esp32c6.
