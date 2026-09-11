@@ -16,8 +16,8 @@
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "mbedtls/sha256.h"
 #include "nvs.h"
+#include "psa/crypto.h"
 
 static const char *TAG = "serial_onboard";
 static nvs_config_t s_current_config;
@@ -43,20 +43,24 @@ static void device_digest(char output[17])
     uint8_t base_mac[6] = {0};
     uint8_t digest[32] = {0};
     static const uint8_t domain[] = "ruview-device-v1";
-    mbedtls_sha256_context context;
-    mbedtls_sha256_init(&context);
-    if (esp_efuse_mac_get_default(base_mac) == ESP_OK &&
-        mbedtls_sha256_starts(&context, 0) == 0 &&
-        mbedtls_sha256_update(&context, domain, sizeof(domain) - 1) == 0 &&
-        mbedtls_sha256_update(&context, base_mac, sizeof(base_mac)) == 0 &&
-        mbedtls_sha256_finish(&context, digest) == 0) {
+    uint8_t digest_input[sizeof(domain) - 1 + sizeof(base_mac)];
+    size_t digest_length = 0;
+    memcpy(digest_input, domain, sizeof(domain) - 1);
+    const esp_err_t mac_result = esp_efuse_mac_get_default(base_mac);
+    if (mac_result == ESP_OK) {
+        memcpy(digest_input + sizeof(domain) - 1, base_mac, sizeof(base_mac));
+    }
+    if (mac_result == ESP_OK &&
+        psa_crypto_init() == PSA_SUCCESS &&
+        psa_hash_compute(PSA_ALG_SHA_256, digest_input, sizeof(digest_input),
+                         digest, sizeof(digest), &digest_length) == PSA_SUCCESS &&
+        digest_length == sizeof(digest)) {
         for (size_t index = 0; index < 8; index++) {
             snprintf(output + index * 2, 3, "%02x", digest[index]);
         }
     } else {
         memcpy(output, "0000000000000000", 17);
     }
-    mbedtls_sha256_free(&context);
 }
 
 static void emit_hello(const char *nonce)

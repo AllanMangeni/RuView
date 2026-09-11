@@ -2,9 +2,9 @@
 
 ## Status
 
-Accepted and physically qualified with one attached ESP32 S3 and an unsigned
-Mac Catalyst development build. ESP32 C6 qualification and signed distribution
-remain release gates.
+Accepted and physically qualified with one attached ESP32 S3 and one attached
+ESP32 C6 through an unsigned Mac Catalyst development build. Signed
+distribution remains a release gate.
 
 ## Context
 
@@ -20,7 +20,7 @@ application diagnostics or provisioning receipts.
 
 ## Decision
 
-1. Firmware 0.8.9 adds a bounded line protocol over the physical USB serial
+1. Firmware 0.8.12 provides a bounded line protocol over the physical USB serial
    channel. A discovery request carries a random 128 bit nonce. The device
    response binds that nonce to chip family, firmware version, current node
    identity, private server target, configuration state, and a pseudonymous
@@ -52,6 +52,14 @@ application diagnostics or provisioning receipts.
    exact chip and port check, a private backup, a matching image, and captured
    boot evidence. Release publication remains a separate maintainer action.
 
+8. The device digest uses the PSA Crypto SHA 256 interface on ESP IDF 5.4 and
+   6.0. This keeps the stable domain separated identity while avoiding the
+   legacy Mbed TLS hash API removed by ESP IDF 6.
+
+9. ESP32 C6 mmWave UART defaults use GPIO 4 and GPIO 5. Startup rejects any
+   configured mmWave pin pair that overlaps the active console RX or TX pins.
+   This preserves the onboarding input path after a failed mmWave probe.
+
 ## Security and privacy consequences
 
 The app gains Mac App Sandbox USB and serial device access, but not general file
@@ -67,7 +75,7 @@ rescanned over USB.
 
 ## Acceptance test
 
-Connect an ESP32 with firmware 0.8.9 to a Mac that is already receiving RuView
+Connect an ESP32 with firmware 0.8.12 to a Mac that is already receiving RuView
 nodes. Use only the macOS Add Sensor workflow to preserve WiFi, assign the
 lowest unused identity, and set the Mac private address. Pass when the UI
 reports the expected chip and firmware, the reassigned node remains fresh for
@@ -77,3 +85,9 @@ and no credential appears in app logs or the provisioning receipt.
 
 The 2026-08-31 physical run passed on an ESP32 S3. The measured witness is in
 `docs/validation/2026-08-31-macos-usb-node-onboarding.md`.
+
+The 2026-09-11 physical run passed on an ESP32 C6 over
+`cu.usbserial-3120`. The Mac app flashed the image, received the nonce bound
+hello receipt, preserved node identity 3, committed the server route, and
+verified fresh server evidence at minus 34 dBm. The run also exposed and fixed
+the GPIO 17 console RX conflict described above.

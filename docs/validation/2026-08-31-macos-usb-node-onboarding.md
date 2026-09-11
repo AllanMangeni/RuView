@@ -46,5 +46,15 @@ firmware image built under ESP-IDF 5.4, and the application image occupied
 
 ## Remaining gates
 
-Physical ESP32 C6, new WiFi credential entry, signed Mac distribution, and
-cross platform serial bridges remain unmeasured.
+New WiFi credential entry, signed Mac distribution, and cross platform serial
+bridges remain unmeasured.
+
+## ESP32 C6 follow up
+
+On 2026-09-11, an ESP32 C6 on `cu.usbserial-3120` completed the Mac app flash,
+hello, configure, and verify sequence with firmware 0.8.12. The app preserved
+the existing node identity 3 and verified fresh sensing server evidence at
+minus 34 dBm. The board returned `RUVIEW_HELLO_OK_V1` within the bounded serial
+exchange after the C6 mmWave defaults moved from the UART0 RX conflict on GPIO
+17 to GPIO 4 and GPIO 5. This closes only the physical C6 onboarding gate. It
+does not qualify new WiFi credential entry or signed distribution.
